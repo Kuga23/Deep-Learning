@@ -1,0 +1,963 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "TP_NLP_sujet.ipynb",
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "72tQHNlEVe33",
+        "colab_type": "text"
+      },
+      "source": [
+        "# TP NLP \n",
+        "\n",
+        "This lab is based on the NLP lab from Ecole polytechnique.\n",
+        "\n",
+        "## 0. Words embedding\n",
+        "\n",
+        "In this lab, you will discover words embedding through several tasks such as translation or classification. The first step will be to download pretrained embeddings. To do so, you have to run the following cells."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "p5hHp3d5bZDY",
+        "colab_type": "code",
+        "outputId": "d28c5119-7fac-4fed-de9b-1931161d0362",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 208
+        }
+      },
+      "source": [
+        "!wget -P /root/input/ -c \"https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz\""
+      ],
+      "execution_count": 1,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "--2020-03-29 21:17:08--  https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz\n",
+            "Resolving s3.amazonaws.com (s3.amazonaws.com)... 52.217.9.142\n",
+            "Connecting to s3.amazonaws.com (s3.amazonaws.com)|52.217.9.142|:443... connected.\n",
+            "HTTP request sent, awaiting response... 200 OK\n",
+            "Length: 1647046227 (1.5G) [application/x-gzip]\n",
+            "Saving to: ‘/root/input/GoogleNews-vectors-negative300.bin.gz’\n",
+            "\n",
+            "GoogleNews-vectors- 100%[===================>]   1.53G  45.0MB/s    in 36s     \n",
+            "\n",
+            "2020-03-29 21:17:44 (44.2 MB/s) - ‘/root/input/GoogleNews-vectors-negative300.bin.gz’ saved [1647046227/1647046227]\n",
+            "\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "6HIGtxxcVYPX",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "from gensim.models import KeyedVectors\n",
+        "import numpy as np"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "IEoX84_2ZQOh",
+        "colab_type": "code",
+        "outputId": "b4396a13-41dd-4cc5-99d6-cc3b721dc16c",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 106
+        }
+      },
+      "source": [
+        "#Run this cell only to test if you have correctedly downloaded the data.\n",
+        "\n",
+        "EMBEDDING_FILE = '/root/input/GoogleNews-vectors-negative300.bin.gz'\n",
+        "word2vec = KeyedVectors.load_word2vec_format(EMBEDDING_FILE, binary=True)\n",
+        "\n",
+        "#Use the following line to assert that the Word2Vec data is available\n",
+        "print(word2vec.word_vec(\"test\")[:10])\n",
+        "\n",
+        "#Once you get the expected results, you don't have to run this cell again.\n",
+        "del word2vec"
+      ],
+      "execution_count": 3,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "/usr/local/lib/python3.6/dist-packages/smart_open/smart_open_lib.py:410: UserWarning: This function is deprecated, use smart_open.open instead. See the migration notes for details: https://github.com/RaRe-Technologies/smart_open/blob/master/README.rst#migrating-to-the-new-open-function\n",
+            "  'See the migration notes for details: %s' % _MIGRATION_NOTES_URL\n"
+          ],
+          "name": "stderr"
+        },
+        {
+          "output_type": "stream",
+          "text": [
+            "[-0.14257812 -0.03686523  0.13574219 -0.06201172  0.07958984  0.01904297\n",
+            " -0.08154297 -0.12792969 -0.02954102  0.23632812]\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "3bU0frRc-itB",
+        "colab_type": "text"
+      },
+      "source": [
+        "## 1. Word2Vec applied to English Vocabulary\n",
+        "\n",
+        "We will use this embeddings to evaluate similarities between words. These tests will also help us to evaluate the quality of the embedding. To do so, we are going to use the given Word2Vec class. The structure of the class has been created (init and load_wordvec methods) but you'll have to complete the two following methods :\n",
+        "\n",
+        "*   *most_similar :* Compute the K most similar words to a given word\n",
+        "\n",
+        "    Input : a word w and the expected number of outputs K\n",
+        "\n",
+        "    Output : The K closest numbers according to the score function\n",
+        "\n",
+        "*   *score :* Compute the cosine similarity between two vectors \n",
+        "\n",
+        "    Input : two words w1 and w2\n",
+        "\n",
+        "    Output : Cosine similarities between the two vectors corresponding to the two inputs\n",
+        "\n",
+        "\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "PzFYMhiC-oBA",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "class Word2vec():\n",
+        "    def __init__(self, fname):\n",
+        "        self.load_wordvec(fname)\n",
+        "        self.vocab = self.word2vec.vocab.keys()\n",
+        "    \n",
+        "    def load_wordvec(self, fname):\n",
+        "        self.word2vec = KeyedVectors.load_word2vec_format(fname, binary=True, limit = 50000)\n",
+        "\n",
+        "    def most_similar(self, w, K=5):\n",
+        "        # TODO \n",
+        "        return\n",
+        "\n",
+        "    def score(self, w1, w2):\n",
+        "        # TODO (help : np.linalg.norm will return the norm of a vector)\n",
+        "       return"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "LarugNtxAdOa",
+        "colab_type": "code",
+        "outputId": "ba311b37-7085-4004-f74f-1d6e05635341",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 72
+        }
+      },
+      "source": [
+        "EMBEDDING_FILE = '/root/input/GoogleNews-vectors-negative300.bin.gz'\n",
+        "w2v = Word2vec(EMBEDDING_FILE)"
+      ],
+      "execution_count": 0,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "/usr/local/lib/python3.6/dist-packages/smart_open/smart_open_lib.py:410: UserWarning: This function is deprecated, use smart_open.open instead. See the migration notes for details: https://github.com/RaRe-Technologies/smart_open/blob/master/README.rst#migrating-to-the-new-open-function\n",
+            "  'See the migration notes for details: %s' % _MIGRATION_NOTES_URL\n"
+          ],
+          "name": "stderr"
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "VrkiNgyJO9x9",
+        "colab_type": "text"
+      },
+      "source": [
+        "Run the following cell to evaluate your model. You don't have to modify this cell."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "WKAfip_iBnO1",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "# You will be evaluated on the output of the following:\n",
+        "for w1, w2 in zip(('cat', 'dog', 'dogs', 'paris', 'germany'), ('dog', 'pet', 'cats', 'france', 'berlin')):\n",
+        "    print(w1, w2, w2v.score(w1, w2))\n",
+        "for w1 in ['cat', 'dog', 'dogs', 'paris', 'germany']:\n",
+        "    print(w2v.most_similar(w1))"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "TszfB41eTkds",
+        "colab_type": "text"
+      },
+      "source": [
+        "You can compare your results with the method *most_similar_cosmul* that uses another solution to compute the most similar words :"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "OeMzXAgORkW_",
+        "colab_type": "code",
+        "outputId": "c3dd6c2d-4ba9-4195-b59c-b1e1ee9520b4",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 124
+        }
+      },
+      "source": [
+        "for w1 in ['cat', 'dog', 'dogs', 'paris', 'germany']:\n",
+        "  print(w2v.word2vec.most_similar_cosmul(w1))"
+      ],
+      "execution_count": 0,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "[('cats', 0.9049681425094604), ('dog', 0.8804720044136047), ('kitten', 0.8732484579086304), ('feline', 0.8663108348846436), ('beagle', 0.8575283288955688), ('puppy', 0.8537718653678894), ('pup', 0.8467137217521667), ('pet', 0.8445757627487183), ('felines', 0.8377957940101624), ('chihuahua', 0.8354873061180115)]\n",
+            "[('dogs', 0.9340235590934753), ('puppy', 0.9053205847740173), ('pit_bull', 0.8901971578598022), ('pooch', 0.8813680410385132), ('cat', 0.8804720044136047), ('golden_retriever', 0.8750442862510681), ('German_shepherd', 0.8732578754425049), ('Rottweiler', 0.8718799352645874), ('beagle', 0.8709302544593811), ('pup', 0.8703446984291077)]\n",
+            "[('dog', 0.9340235590934753), ('canines', 0.9090846180915833), ('cats', 0.8825874328613281), ('pit_bulls', 0.8774142861366272), ('pets', 0.8712201118469238), ('puppies', 0.8692987561225891), ('pooches', 0.8581174612045288), ('German_shepherds', 0.8535523414611816), ('animals', 0.8492838740348816), ('pit_bull', 0.8491798639297485)]\n",
+            "[('london', 0.7777880430221558), ('france', 0.7775390148162842), ('dubai', 0.7766158580780029), ('rome', 0.7732911705970764), ('toronto', 0.7728569507598877), ('las_vegas', 0.7720862627029419), ('spain', 0.7690009474754333), ('berlin', 0.762671947479248), ('michelle', 0.7621249556541443), ('elle', 0.761517345905304)]\n",
+            "[('german', 0.8404779434204102), ('europe', 0.8390600681304932), ('european', 0.8251047730445862), ('sweden', 0.8192111849784851), ('france', 0.8157169222831726), ('spain', 0.8143780827522278), ('russia', 0.8092007040977478), ('america', 0.8038331866264343), ('usa', 0.8033005595207214), ('india', 0.8012795448303223)]\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "PzI3DWdvT7-a",
+        "colab_type": "text"
+      },
+      "source": [
+        "## 2. Bag of Words\n",
+        "\n",
+        "A quick solution to implement in NLP is Bag of Words. This means that we are going to consider the whole sentences without any word order. We are going to compute two solutions, one with idf and one without idf. \n",
+        "\n",
+        "First, we need to download the dataset. We are going to use the dataset from IMDB based on movie reviews."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "IZqTk7LcVGg_",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "from keras.datasets import imdb"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "eJuWViAhXS2B",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "(x_train, y_train), (x_test, y_test) = imdb.load_data(num_words=100000)"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "pUqhdc3bYG1t",
+        "colab_type": "code",
+        "outputId": "f5633650-2470-4f89-d86d-0a185d4ee19b",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 54
+        }
+      },
+      "source": [
+        "INDEX_FROM = 3\n",
+        "word_to_id = imdb.get_word_index()\n",
+        "word_to_id = {k:(v+INDEX_FROM) for k,v in word_to_id.items()}\n",
+        "word_to_id[\"<PAD>\"] = 0\n",
+        "word_to_id[\"<START>\"] = 1\n",
+        "word_to_id[\"<UNK>\"] = 2\n",
+        "word_to_id[\"<UNUSED>\"] = 3\n",
+        "\n",
+        "id_to_word = {value:key for key,value in word_to_id.items()}\n",
+        "print(' '.join(id_to_word[id] for id in x_train[0] if id > 2))"
+      ],
+      "execution_count": 0,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "this film was just brilliant casting location scenery story direction everyone's really suited the part they played and you could just imagine being there robert redford's is an amazing actor and now the same being director norman's father came from the same scottish island as myself so i loved the fact there was a real connection with this film the witty remarks throughout the film were great it was just brilliant so much that i bought the film as soon as it was released for retail and would recommend it to everyone to watch and the fly fishing was amazing really cried at the end it was so sad and you know what they say if you cry at a film it must have been good and this definitely was also congratulations to the two little boy's that played the part's of norman and paul they were just brilliant children are often left out of the praising list i think because the stars that play them all grown up are such a big profile for the whole film but these children are amazing and should be praised for what they have done don't you think the whole story was so lovely because it was true and was someone's life after all that was shared with us all\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "503TEXrWaHak",
+        "colab_type": "code",
+        "outputId": "3c1315d0-8a57-490c-e36c-fba1482e4c3d",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 34
+        }
+      },
+      "source": [
+        "truncated_sentences = []\n",
+        "\n",
+        "for sent_ind in range(1000):\n",
+        "  sentence = [id_to_word[id] for id in x_train[sent_ind] if id > 2]\n",
+        "  truncated_sentences.append(sentence[:15])\n",
+        "\n",
+        "print(truncated_sentences[0])"
+      ],
+      "execution_count": 0,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "['french', 'horror', 'cinema', 'has', 'seen', 'something', 'of', 'a', 'revival', 'over', 'the', 'last', 'couple', 'of', 'years']\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "xZtSrzGsQMYV",
+        "colab_type": "text"
+      },
+      "source": [
+        "You will have to complete the following class. The methods are given but you'll have to complete them.\n",
+        "\n",
+        "*   *encode* : Encode the sentences with a Bag of Words algorithm using a simple mean or using an idf-weighted mean\n",
+        "\n",
+        "  Input : sentences to encode, a boolean defining if we are goinf to use the idf-weighted method.\n",
+        "\n",
+        "  Output : A matrix with the sentences embedding\n",
+        "\n",
+        "*   *most_similar* : Find the K most similar sentences in the corpus.\n",
+        "\n",
+        "  Input : a sentence s that need to be matched, a dataset of sentences, the idf boolean for the method and the number K of sentences to return\n",
+        "\n",
+        "  Output : The K most similar sentences\n",
+        "\n",
+        "*   *score :* Compute the cosine similarity between two vectors \n",
+        "\n",
+        "    Input : two words w1 and w2\n",
+        "\n",
+        "    Output : Cosine similarities between the two vectors corresponding to the two inputs\n",
+        "\n",
+        "*   *build_idf* : Compute an idf dictionnary with all the weights\n",
+        "\n",
+        "  $$idf(word, corpus) =  max(1, log_{10}(\\frac{length(sentences)}{count(word)}))$$\n",
+        "\n",
+        "    Input : Sentences from the corpus\n",
+        "\n",
+        "    Output : A dictionnary with words as keys and weights as values\n",
+        "\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "6GicNUSNT9fc",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "class BoV():\n",
+        "    def __init__(self, w2v):\n",
+        "        self.w2v = w2v\n",
+        "    \n",
+        "    def encode(self, sentences, idf=False):\n",
+        "        sentemb = []\n",
+        "        for sent in sentences:\n",
+        "            if idf is False:\n",
+        "                #TODO\n",
+        "                # mean of word vectors\n",
+        "                sentemb.append()\n",
+        "            else:\n",
+        "                #TODO\n",
+        "                # idf-weighted mean of word vectors\n",
+        "                sentemb.append()\n",
+        "        return np.vstack(sentemb)\n",
+        "\n",
+        "    def most_similar(self, s, sentences, idf=False, K=5):\n",
+        "        keys = self.encode(sentences, idf)\n",
+        "        query = self.encode([s], idf).reshape(300)\n",
+        "        #TODO\n",
+        "        return\n",
+        "\n",
+        "    def score(self, s1, s2, idf=False):\n",
+        "        #TODO\n",
+        "        return \n",
+        "    \n",
+        "    def build_idf(self, sentences):\n",
+        "        idf = {}\n",
+        "        #TODO        \n",
+        "        return idf"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "0kUyVOoQZgTx",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "s2v = BoV(w2v)"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "dhKszZreZgBo",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "idf = s2v.build_idf(truncated_sentences)"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "20WZNn-qRdi1",
+        "colab_type": "text"
+      },
+      "source": [
+        "Run the following cell and comment your result. Is that the output you expected ? To what extent, the similar sentence is good enough according to you ?"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "gS1vfwXbapRj",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "#You will be evaluated on the output of the following lines. You need to print the 5 most_similar sentences.\n",
+        "most_similar_sentences = s2v.most_similar(\"This was the worst movie I ever seen in my life\".split(\" \"), truncated_sentences)\n",
+        "print()\n",
+        "most_similar_sentences_idf = s2v.most_similar(\"This was the worst movie I ever seen in my life\".split(\" \"), truncated_sentences, idf)"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "8ZGG6GRKnzf7",
+        "colab_type": "text"
+      },
+      "source": [
+        "## 3. Translation\n",
+        "\n",
+        "One task that you can expect from an NLP application is to compute a quick translation. Creating advanced tools for translation is hard but there is an easy way to translate. We are going to compute a quick translation thanks to projection. We start from the assumption that the two languages have more or less the same shape. So with a simple mapping we should be able to translate automatically.\n",
+        "\n",
+        "You can visualise it with the gif from [here](https://engineering.fb.com/ai-research/unsupervised-machine-translation-a-novel-approach-to-provide-fast-accurate-translations-for-more-languages/). \n",
+        "\n",
+        "### Mapping\n",
+        "\n",
+        "Let's consider a bilingual dictionary (e.g French-English).\n",
+        "\n",
+        "Let's define **X** and **Y** the **French** and **English** matrices.\n",
+        "\n",
+        "They contain the embeddings associated to the words in the bilingual dictionary.\n",
+        "\n",
+        "We want to find a **mapping W** that will project the source word space (e.g French) to the target word space (e.g English).\n",
+        "\n",
+        "We want to find : $$W^* = argmin || W.X - Y || \\text{ such that } W^T.W = Id$$\n",
+        "\n",
+        "Fortunately, the problem has a closed form solution:\n",
+        "$$W = U.V^T  \\text{ where }  U.\\Sigma.V^T = SVD(Y.X^T)$$\n",
+        "\n",
+        "\n",
+        "First we need to download the data. Because of the limited RAM in google colab, we are going to only use the part of the model that we need. You have to run the following cells. It will take some time.\n",
+        "\n",
+        "WARNING : Bedore running the following cells, you should restart the the environnement to assert that your RAM is empty. It will clear the variables from the previous part. Otherwise, you might exceed the limitation.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "kNMgEqf496Gh",
+        "colab_type": "code",
+        "outputId": "57afd60e-bedd-4b54-d8d2-7fb9810b192a",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 399
+        }
+      },
+      "source": [
+        "!wget -P /root/input/ -c https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.fr.300.bin.gz\n",
+        "!wget -P /root/input/ -c https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.en.300.bin.gz\n"
+      ],
+      "execution_count": 0,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "--2020-03-28 17:11:12--  https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.fr.300.bin.gz\n",
+            "Resolving dl.fbaipublicfiles.com (dl.fbaipublicfiles.com)... 104.22.74.142, 104.22.75.142, 2606:4700:10::6816:4b8e, ...\n",
+            "Connecting to dl.fbaipublicfiles.com (dl.fbaipublicfiles.com)|104.22.74.142|:443... connected.\n",
+            "HTTP request sent, awaiting response... 200 OK\n",
+            "Length: 4496886212 (4.2G) [application/octet-stream]\n",
+            "Saving to: ‘/root/input/cc.fr.300.bin.gz’\n",
+            "\n",
+            "cc.fr.300.bin.gz    100%[===================>]   4.19G  30.2MB/s    in 2m 41s  \n",
+            "\n",
+            "2020-03-28 17:13:54 (26.6 MB/s) - ‘/root/input/cc.fr.300.bin.gz’ saved [4496886212/4496886212]\n",
+            "\n",
+            "--2020-03-28 17:13:55--  https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.en.300.bin.gz\n",
+            "Resolving dl.fbaipublicfiles.com (dl.fbaipublicfiles.com)... 104.22.74.142, 104.22.75.142, 2606:4700:10::6816:4b8e, ...\n",
+            "Connecting to dl.fbaipublicfiles.com (dl.fbaipublicfiles.com)|104.22.74.142|:443... connected.\n",
+            "HTTP request sent, awaiting response... 200 OK\n",
+            "Length: 4503593528 (4.2G) [application/octet-stream]\n",
+            "Saving to: ‘/root/input/cc.en.300.bin.gz’\n",
+            "\n",
+            "cc.en.300.bin.gz    100%[===================>]   4.19G  29.8MB/s    in 2m 39s  \n",
+            "\n",
+            "2020-03-28 17:16:35 (27.0 MB/s) - ‘/root/input/cc.en.300.bin.gz’ saved [4503593528/4503593528]\n",
+            "\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "NKEh-gdJAl8C",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "!gunzip -k /root/input/cc.fr.300.bin.gz\n",
+        "!gunzip -k /root/input/cc.en.300.bin.gz"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "eyywOx-PHe96",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "import gensim.models"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "vZ1De7OLSk_E",
+        "colab_type": "code",
+        "outputId": "c23a9bd9-0c44-401e-ecf7-bb2118899eca",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 72
+        }
+      },
+      "source": [
+        "ft = gensim.models.FastText.load_fasttext_format('/root/input/cc.fr.300.bin')  # Original fasttext embeddings from https://fasttext.cc/\n",
+        "ft.wv.save('/root/input/gensim_fasttext_fr.model')\n",
+        "del ft"
+      ],
+      "execution_count": 0,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "/usr/local/lib/python3.6/dist-packages/smart_open/smart_open_lib.py:410: UserWarning: This function is deprecated, use smart_open.open instead. See the migration notes for details: https://github.com/RaRe-Technologies/smart_open/blob/master/README.rst#migrating-to-the-new-open-function\n",
+            "  'See the migration notes for details: %s' % _MIGRATION_NOTES_URL\n"
+          ],
+          "name": "stderr"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "wYMPFA5YHuUe",
+        "colab_type": "code",
+        "outputId": "73f09be0-d0b5-48f9-e78b-1760508064b9",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 72
+        }
+      },
+      "source": [
+        "ft = gensim.models.FastText.load_fasttext_format('/root/input/cc.en.300.bin')  # Original fasttext embeddings from https://fasttext.cc/\n",
+        "ft.wv.save('/root/input/gensim_fasttext_en.model')\n",
+        "del ft"
+      ],
+      "execution_count": 0,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "/usr/local/lib/python3.6/dist-packages/smart_open/smart_open_lib.py:410: UserWarning: This function is deprecated, use smart_open.open instead. See the migration notes for details: https://github.com/RaRe-Technologies/smart_open/blob/master/README.rst#migrating-to-the-new-open-function\n",
+            "  'See the migration notes for details: %s' % _MIGRATION_NOTES_URL\n"
+          ],
+          "name": "stderr"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "5kDc0gSW7nqr",
+        "colab_type": "code",
+        "outputId": "20e48457-2a09-411e-8e25-6fefa5110061",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 72
+        }
+      },
+      "source": [
+        "ft_french = gensim.models.KeyedVectors.load('/root/input/gensim_fasttext_fr.model')\n",
+        "ft_english = gensim.models.KeyedVectors.load('/root/input/gensim_fasttext_en.model')"
+      ],
+      "execution_count": 0,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "/usr/local/lib/python3.6/dist-packages/smart_open/smart_open_lib.py:410: UserWarning: This function is deprecated, use smart_open.open instead. See the migration notes for details: https://github.com/RaRe-Technologies/smart_open/blob/master/README.rst#migrating-to-the-new-open-function\n",
+            "  'See the migration notes for details: %s' % _MIGRATION_NOTES_URL\n"
+          ],
+          "name": "stderr"
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "H40m3SbHYQFI",
+        "colab_type": "text"
+      },
+      "source": [
+        "You can now test your model contained in ft_french and ft_english."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "51J115OMAOH5",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "#You can test if your model is working\n",
+        "\n",
+        "print(ft_french.words[:10])   # list of words in dictionary\n",
+        "print(ft_french['roi']) # get the vector of the word 'king'"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "DHU3m-08YxaE",
+        "colab_type": "text"
+      },
+      "source": [
+        "Now we can start the translation. The first step is to define the X and Y matrix. Instead of computing the whole vocabulary, we are going to use a trick. We need to assert that the words are in the same position in X and Y. \n",
+        "\n",
+        "For the example if \"dog\" is the 100th word in X, \"chien\" should be the 100th word. To do so, we are going to use transparent words only. We have the strong assumption that if a word exists in both languages it should have the same meaning in both of them.\n",
+        "\n",
+        "Compute the intersection of the two vocabulary and store the first **20000 common words** with their embeddings in X and Y. "
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "03AN1G1tO2_c",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "X = {}\n",
+        "Y = {}\n",
+        "\n",
+        "#TODO"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "Yljm760SZzzQ",
+        "colab_type": "text"
+      },
+      "source": [
+        "Now compute W with the given close form. The shape of W should be (300, 300)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "TDejtYtG8A-O",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "import scipy.linalg\n",
+        "import numpy as np\n",
+        "\n",
+        "#TODO"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "TStieykhQ77Z",
+        "colab_type": "text"
+      },
+      "source": [
+        "Run the following cell and comment your result. Is that the output you expected ? Why ?"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "S9LysDfIQuU4",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "K = 5\n",
+        "\n",
+        "#You will be evaluated on the following outputs\n",
+        "\n",
+        "def score(value1, value2):\n",
+        "  return np.dot(value1, value2)/(np.linalg.norm(value1)*np.linalg.norm(value2))\n",
+        "\n",
+        "print(\"French to English : \")\n",
+        "print()\n",
+        "for w1 in ['souris', 'travailler', 'rue', 'pays']:\n",
+        "    # Compute the projection of each word and find the 5 closest word in the English vocabulary\n",
+        "    print()#Print the list of the 5 best outputs for each word\n",
+        "\n",
+        "print()\n",
+        "print(\"English to French : \")\n",
+        "for w2 in ['cat', 'target', 'city', 'free']:\n",
+        "    # Compute the projection of each word and find the 5 closest word in the French vocabulary\n",
+        "    print()#Print the list of the 5 best outputs for each word\n"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "eCSdbk3YaRBI",
+        "colab_type": "text"
+      },
+      "source": [
+        "WARNING : When you have finished the previous part, you can delete the two model to free the RAM before the next part. Don't delete them before you have finished the previous question, otherwise, you'll have to recompute all the downloading part."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "TNwgBJ5-SMpC",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "del ft_french\n",
+        "del ft_english"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "G9ta4JGrWC52",
+        "colab_type": "text"
+      },
+      "source": [
+        "## 4. Classification\n",
+        "\n",
+        "We are now starting the Deep Learning part with a classification task. We have a dataset from IMDB with movie reviews. We are going to build a simple classifier. The objective is to make a binary classifier to separate positive from negative reviews."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "CA6nKkjVa91w",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "import numpy as np\n",
+        "import tensorflow as tf\n",
+        "top_words = 5000\n",
+        "(X_train, y_train), (X_test, y_test) = tf.keras.datasets.imdb.load_data(num_words=top_words)"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "-FOAzoTccxGo",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "max_review_length = 500\n",
+        "X_train = tf.keras.preprocessing.sequence.pad_sequences(X_train, maxlen=max_review_length)\n",
+        "X_test = tf.keras.preprocessing.sequence.pad_sequences(X_test, maxlen=max_review_length)"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "2x2b3LvLd8rd",
+        "colab_type": "text"
+      },
+      "source": [
+        "The first model that you need to compute is a simple feed forward neural network.\n",
+        "\n",
+        "- Use the following layers to build your network\n",
+        "  - An embedding layer with top_words = 5000, an embedding vector length of 32 and a max reviex length of 500\n",
+        "  - A fully-connected layer with 16 units and a ReLU activiation function\n",
+        "  - An output fully-connected layer with one unit and a Sigmoid activation function.\n",
+        "- Compile the generator using binary crossentropy loss and the Adam optimizer \n",
+        "- Train on the data with 20 epochs\n",
+        "- Compute the accuracy with model.evaluate\n",
+        "- Plot the history of the loss versus the epoch number"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "tI-2p_6scxB4",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "from tensorflow.keras.models import Sequential\n",
+        "from tensorflow.keras.layers import Dense\n",
+        "from tensorflow.keras.layers import Embedding\n",
+        "from tensorflow.keras.preprocessing import sequence\n",
+        "\n",
+        "model = Sequential()\n",
+        "#TODO"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "JvvnYHBCfj04",
+        "colab_type": "text"
+      },
+      "source": [
+        "The second model will be based on LSTMs.\n",
+        "\n",
+        "- Use the following layers to build your network\n",
+        "  - An embedding layer with top_words = 5000, an embedding vector length of 32 and a max reviex length of 500\n",
+        "  - A Dropout layer with dropout ratio of 0.2\n",
+        "  - An LSTM layer with 100 units\n",
+        "  - A Dropout layer with dropout ratio of 0.2\n",
+        "  - An output fully-connected layer with one unit and a Sigmoid activation function.\n",
+        "- Compile the generator using binary crossentropy loss and the Adam optimizer \n",
+        "- Train on the data with 3 epochs\n",
+        "- Compute the accuracy with model.evaluate\n",
+        "- Plot the history of the loss versus the epoch number"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "aNYrzga3fjin",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "from tensorflow.keras.layers import LSTM\n",
+        "from tensorflow.keras.layers import Dropout\n",
+        "\n",
+        "#TODO"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    }
+  ]
+}
